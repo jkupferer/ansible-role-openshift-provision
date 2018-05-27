@@ -1,0 +1,41 @@
+---
+- when: object_content.file is match('https?://')
+  block:
+  - name: Create temp file for {{ openshift_cluster_content_object.object }}
+    tempfile:
+      state: file
+    register: tempfile
+    changed_when: false
+
+  - name: Download object {{ openshift_cluster_content_object.object }} file content
+    get_url:
+      url: "{{ object_content.file }}"
+      dest: "{{ tempfile.path }}"
+
+  - name: Slurp {{ openshift_cluster_content_object.object }} file content
+    slurp:
+      src: "{{ tempfile.path }}"
+    register: file_content
+
+- name: Provision object {{ openshift_cluster_content_object.object }} file content
+  include: openshift_cluster_content-content-resource.yml
+  with_items: >-
+    {% if file_content.content is defined -%}
+    {{ [ file_content.content ] }}
+    {% else -%}
+    {{ lookup('file_source', object_content.file, wantlist=True) }}
+    {% endif -%}
+  loop_control:
+    loop_var: object_content_source
+  vars:
+    resource_action: >-
+      {{ object_content.file_action | default('apply') }}
+    object_content_resource: >-
+      {{ object_content_source | from_yaml }}
+
+- name: Clean up temp file
+  file:
+    path: "{{ tempfile.path }}"
+    state: absent
+  changed_when: false
+  when: tempfile.path is defined

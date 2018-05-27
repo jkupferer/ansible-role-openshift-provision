@@ -1,0 +1,63 @@
+---
+- name: Set Facts
+  hosts: localhost
+  connection: local
+  vars_files:
+  - login-creds.yml
+  tasks:
+  - include_tasks: setup-test.yml
+
+- name: Test Provision
+  hosts: localhost
+  connection: local
+  vars:
+    openshift_clusters:
+    - openshift_cluster_content:
+      - object: Test
+        content:
+        - name: Test ClusterRole
+          file: applier/test-clusterrole.yml
+        - name: Test ConfigMap
+          namespace: provision-test
+          file: applier/test-configmap.yml
+        - name: Test directory handling
+          namespace: provision-test
+          file: applier/test-dir
+        - name: Test Template from file
+          namespace: provision-test
+          template: applier/test-template.yml
+          params: applier/test-template-params.txt
+        - name: Test Template without file
+          namespace: provision-test
+          template: openshift//httpd-example
+      projects:
+      - name: provision-test
+  roles:
+  - role: openshift-provision
+#    - galaxy_requirements:
+#      - path/to/galaxy/requirements.yml
+#    - object: <object_type>
+#      pre_steps: # Optional: pre-steps at object level can be added if desired
+#        - role: <path to an ansible role>
+#      content:
+#      - name: <definition_name>
+#        pre_steps: # Optional: pre-steps at content level can be added if desired
+#          - role: <path to an ansible role>
+#            vars: # Optional: only needed if the role above needs values passed
+#              <key1>: <value1>  
+#        file: <file source>
+#        file_action: <apply|create> # Optional: Defaults to 'apply'
+#        tags: # Optional: Tags are only needed if `filter_tags` is used
+#        - tag1
+#        - tag2
+#        post_steps: # Optional: post-steps at content level can be added if desired
+#          - role: <path to an ansible role>
+#      post_steps: # Optional: post-steps at object level can be added if desired
+#        - role: <path to an ansible role>
+#    - object: <object_type>
+#      content:
+#      - name: <definition_name>
+#        template: <template_source>
+#        template_action: <apply|create> # Optional: Defaults to 'apply'
+#        params: <params_file_source>
+#        namespace: <target_openshift_namespace>

@@ -1,0 +1,52 @@
+---
+- name: Create temp dir for {{ openshift_cluster_content_object.object }} template
+  tempfile:
+    state: directory
+  register: tempdir
+  changed_when: false
+
+- name: Copy template file for {{ openshift_cluster_content_object.object }} template
+  copy:
+    src: "{{ object_content.template }}"
+    dest: "{{ tempdir.path ~ '/' ~ object_content.template|basename }}"
+  register: copy_template_file
+  changed_when: false
+  failed_when: false
+
+- name: Copy params file for {{ openshift_cluster_content_object.object }} template
+  copy:
+    src: "{{ object_content.params }}"
+    dest: "{{ tempdir.path ~ '/' ~ object_content.params|basename }}"
+  when: object_content.params is defined
+  register: copy_template_params
+  changed_when: false
+
+- name: Process object {{ openshift_cluster_content_object.object }} template
+  command: >-
+    {{ oc_cmd }} process
+    {% if copy_template_file.dest is defined %}
+    --local -f {{ (tempdir.path ~ '/' ~ object_content.template|basename) | quote }}
+    {% elif object_content.template is match('https?://') %}
+    -f {{ object_content.template | quote }}
+    {% else %}
+    {{ object_content.template | quote }}
+    {% endif %}
+    {% if object_content.params is defined %}
+    --param-file={{ (tempdir.path ~ '/' ~ object_content.params|basename) | quote }}
+    {% endif %}
+  register: oc_process
+  changed_when: false
+
+- name: Provision object {{ openshift_cluster_content_object.object }} template output
+  include: openshift_cluster_content-content-resource.yml
+  vars:
+    resource_action: >-
+      {{ object_content.template_action | default('apply') }}
+    object_content_resource: >-
+      {{ oc_process.stdout | from_json }}
+
+- name: Clean up temp directory
+  file:
+    path: "{{ tempdir.path }}"
+    state: absent
+  changed_when: false

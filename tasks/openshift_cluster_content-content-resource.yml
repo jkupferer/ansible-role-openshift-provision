@@ -1,0 +1,37 @@
+---
+
+- name: >-
+    Pre-steps for openshift_cluster_content object {{ openshift_cluster_content_object.object }}
+    content {{ object_content_resource.kind }} {{ object_content_resource.metadata.name | default('') }}
+  include_tasks: openshift_cluster_content-pre-post-step.yml
+  with_items: >-
+    {{ object_content.pre_steps | default([]) }}
+  loop_control:
+    loop_var: step
+
+- name: >-
+    Provision openshift_cluster_content object {{ openshift_cluster_content_object.object }}
+    content {{ object_content_resource.kind }} {{ object_content_resource.metadata.name | default('') }}
+  openshift_provision:
+    action: "{{ resource_action }}"
+    connection:
+      oc_cmd: "{{ oc_cmd }}"
+    namespace: "{{ object_content.namespace | default(None) }}"
+    resource: "{{ object_content_resource_item }}"
+  with_items: >-
+    {% if object_content_resource.kind == 'List' -%}
+    {{ object_content_resource.get('items') }}
+    {% else -%}
+    {{ [ object_content_resource ] }}
+    {% endif -%}
+  loop_control:
+    loop_var: object_content_resource_item
+
+- name: >-
+    Post-steps for openshift_cluster_content object {{ openshift_cluster_content_object.object }}
+    content {{ object_content_resource.kind }} {{ object_content_resource.metadata.name | default('') }}
+  include_tasks: openshift_cluster_content-post-post-step.yml
+  with_items: >-
+    {{ object_content.post_steps | default([]) }}
+  loop_control:
+    loop_var: step

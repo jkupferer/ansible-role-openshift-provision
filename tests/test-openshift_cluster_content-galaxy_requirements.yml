@@ -1,0 +1,22 @@
+---
+- name: Set Facts
+  hosts: localhost
+  connection: local
+  vars_files:
+  - login-creds.yml
+  tasks:
+  - include_tasks: setup-test.yml
+
+- name: Test Provision
+  hosts: localhost
+  connection: local
+  vars:
+    openshift_clusters:
+    - openshift_cluster_content:
+      - galaxy_requirements:
+        - applier/requirements.yml
+      - object: Test role
+        content: []
+        pre_steps: indentation
+  roles:
+  - role: openshift-provision

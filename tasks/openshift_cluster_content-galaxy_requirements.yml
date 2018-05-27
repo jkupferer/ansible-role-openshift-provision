@@ -1,0 +1,21 @@
+---
+
+- name: Generate a temp dir to be used for dependencies
+  tempfile:
+    state: directory
+  register: tmp_dir
+  when:
+  - tmp_dep_dir is undefined
+  changed_when: false
+
+- name: Register the location of the temp dir for dependencies
+  set_fact:
+    tmp_dep_dir: "{{ tmp_dir.path }}/"
+  when:
+  - tmp_dep_dir is undefined
+
+- name: Run ansible-galaxy to pull in dependency roles
+  command: >-
+    ansible-galaxy install -r {{ item|quote }} -p {{ tmp_dep_dir|quote }}
+  with_items: "{{ dependencies.galaxy_requirements }}"
+  changed_when: false

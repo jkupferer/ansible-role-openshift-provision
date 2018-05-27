@@ -1,0 +1,28 @@
+---
+
+- name: openshift_cluster_content object {{ openshift_cluster_content_object.object }} pre_steps
+  include_tasks: openshift_cluster_content-pre-post-step.yml
+  with_items: >-
+    {{ openshift_cluster_content_object.pre_steps | default([]) }}
+  loop_control:
+    loop_var: step
+
+- name: Handle openshift_cluster_content object {{ openshift_cluster_content_object.object }} content
+  include_tasks: openshift_cluster_content-{{ object_type }}-content.yml
+  with_items: >-
+    {{ openshift_cluster_content_object.content | default([]) }}
+  loop_control:
+    loop_var: object_content
+  vars:
+    object_type: >-
+      {{ 'template' if 'template' in object_content else 'file' }}
+  when: >-
+    filter_tags is not defined or
+    filter_tags.split(',') | intersect(object_content.tags | default([])) | length > 0
+
+- name: openshift_cluster_content object {{ openshift_cluster_content_object.object }} post_steps
+  include_tasks: openshift_cluster_content-pre-post-step.yml
+  with_items: >-
+    {{ openshift_cluster_content_object.post_steps | default([]) }}
+  loop_control:
+    loop_var: step
